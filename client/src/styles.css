@@ -1,0 +1,1016 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: #f8fafc;
+  color: #1a202c;
+  line-height: 1.6;
+}
+
+/* Layout */
+.app-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.app-header {
+  text-align: center;
+  padding: 24px 0;
+  border-bottom: 2px solid #e2e8f0;
+  margin-bottom: 24px;
+}
+
+.app-header h1 {
+  font-size: 1.5rem;
+  color: #1a365d;
+  font-weight: 700;
+}
+
+.app-header p {
+  color: #718096;
+  font-size: 0.9rem;
+  margin-top: 4px;
+}
+
+/* Filters */
+.filters {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.filters select {
+  padding: 8px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  background: white;
+  cursor: pointer;
+}
+
+.filters select:focus {
+  outline: none;
+  border-color: #3182ce;
+  box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.1);
+}
+
+/* Button */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-primary {
+  background: #3182ce;
+  color: white;
+}
+
+.btn-primary:hover {
+  background: #2c5282;
+}
+
+.btn-secondary {
+  background: #e2e8f0;
+  color: #4a5568;
+}
+
+.btn-secondary:hover {
+  background: #cbd5e0;
+}
+
+.btn-add {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  padding: 14px 24px;
+  font-size: 1rem;
+  border-radius: 50px;
+  box-shadow: 0 4px 12px rgba(49, 130, 206, 0.3);
+  z-index: 100;
+}
+
+/* Calendar Overrides */
+.fc {
+  background: white;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.fc .fc-toolbar-title {
+  font-size: 1.2rem !important;
+  font-weight: 600;
+}
+
+.fc .fc-button {
+  font-size: 0.85rem !important;
+}
+
+.fc-event {
+  border-radius: 4px !important;
+  padding: 2px 4px !important;
+  font-size: 0.8rem !important;
+}
+
+/* 월별 뷰 셀 높이 키우기 (더 많은 일정 표시) */
+.fc-dayGridMonth-view .fc-daygrid-day-frame {
+  min-height: 160px;
+}
+
+@media (max-width: 768px) {
+  .fc-dayGridMonth-view .fc-daygrid-day-frame {
+    min-height: 90px;
+  }
+}
+
+/* 월 뷰 이벤트: 한 줄에 시간 없이 장소만 표시되는 게 잘 보이도록 */
+.fc-dayGridMonth-view .fc-event {
+  font-size: 0.78rem !important;
+  padding: 3px 6px !important;
+  margin-bottom: 2px !important;
+  border-radius: 4px !important;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 월 뷰에서 마우스 호버시 커서 변경 (클릭 가능 표시) */
+.fc-dayGridMonth-view .fc-daygrid-day-frame {
+  cursor: pointer;
+}
+
+.fc-dayGridMonth-view .fc-daygrid-day-frame:hover {
+  background-color: #f7fafc;
+}
+
+/* 날짜 숫자 클릭 가능 표시 */
+.fc-daygrid-day-number {
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.fc-daygrid-day-number:hover {
+  color: #3182ce;
+  text-decoration: underline;
+}
+
+/* 주간뷰 커스텀 이벤트 (시간/장소/용도 3줄) */
+.fc-custom-event {
+  padding: 2px 4px;
+  line-height: 1.25;
+  overflow: hidden;
+  height: 100%;
+  color: white;
+}
+
+.fc-custom-time {
+  font-size: 0.7rem;
+  font-weight: 600;
+  opacity: 0.95;
+}
+
+.fc-custom-place {
+  font-size: 0.78rem;
+  font-weight: 600;
+  margin-top: 1px;
+  word-break: keep-all;
+  white-space: normal;
+}
+
+.fc-custom-purpose {
+  font-size: 0.72rem;
+  margin-top: 2px;
+  opacity: 0.9;
+  word-break: keep-all;
+  white-space: normal;
+}
+
+/* 짧은 일정(30분~1시간)에서는 텍스트 잘림 방지 */
+.fc-timegrid-event-short .fc-custom-place,
+.fc-timegrid-event-short .fc-custom-purpose {
+  font-size: 0.65rem;
+}
+
+/* List view 스타일 */
+.fc-list-event-dot {
+  border-width: 6px !important;
+}
+
+.fc-list-event:hover td {
+  background-color: #f7fafc !important;
+  cursor: pointer;
+}
+
+/* List view 날짜 헤더: "2026년 5월 10일 (일)" 좌측 정렬 */
+.fc-list-day-cushion {
+  background-color: #edf2f7 !important;
+  font-weight: 600;
+  text-align: left !important;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.fc-list-day:hover .fc-list-day-cushion {
+  background-color: #cbd5e0 !important;
+}
+
+.fc-list-day-cushion .fc-list-day-text {
+  float: none !important;
+  text-align: left !important;
+}
+
+/* List view 커스텀 제목 (장소 + 용도) */
+.fc-list-custom-title {
+  display: inline;
+}
+
+.fc-list-place {
+  font-weight: 600;
+  color: #1a202c;
+}
+
+.fc-list-purpose {
+  color: #4a5568;
+  font-weight: 400;
+}
+
+.fc-list-event-time {
+  font-size: 0.85rem;
+  color: #2d3748;
+  font-weight: 500;
+  white-space: nowrap;
+  width: 1%;
+  padding: 10px 8px !important;
+}
+
+.fc-list-event-title {
+  font-size: 0.9rem;
+  padding: 10px 8px !important;
+  line-height: 1.4;
+}
+
+.fc-list-event-graphic {
+  padding: 10px 4px !important;
+}
+
+@media (max-width: 768px) {
+  .fc-list-event-time {
+    font-size: 0.75rem;
+    padding: 8px 4px !important;
+  }
+
+  .fc-list-event-title {
+    font-size: 0.8rem;
+    padding: 8px 4px !important;
+  }
+}
+
+/* 대기중(pending) 이벤트: 노란 보더로 구분 */
+.fc-event.status-pending {
+  opacity: 0.7 !important;
+  border-width: 2px !important;
+  border-style: dashed !important;
+  border-color: #ed8936 !important;
+}
+
+.fc-event.status-approved {
+  opacity: 1 !important;
+}
+
+.fc-event.status-rejected {
+  opacity: 0.5 !important;
+  text-decoration: line-through;
+}
+
+/* Legend */
+.legend {
+  display: flex;
+  gap: 16px;
+  margin-top: 12px;
+  padding: 8px 0;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: #4a5568;
+}
+
+.legend-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  box-sizing: border-box;
+}
+
+.legend-divider {
+  color: #cbd5e0;
+  font-size: 0.8rem;
+}
+
+/* Modal */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modal {
+  background: white;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 520px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+}
+
+.modal-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-header h2 {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #a0aec0;
+  padding: 4px;
+}
+
+.modal-body {
+  padding: 24px;
+}
+
+/* Form */
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #4a5568;
+  margin-bottom: 4px;
+}
+
+.form-group label .required {
+  color: #e53e3e;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-family: inherit;
+  transition: border-color 0.2s;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: #3182ce;
+  box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.1);
+}
+
+.form-group textarea {
+  resize: vertical;
+  min-height: 60px;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+/* 3열 레이아웃 (건물 / 층 / 공간) */
+.form-row-3 {
+  display: grid;
+  grid-template-columns: 1fr 0.7fr 1.3fr;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+/* 시간 picker (시 / 분 분리) */
+.time-picker {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+/* 반복 설정 pill 버튼 */
+.recurrence-pills {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.pill {
+  flex: 1;
+  min-width: 80px;
+  padding: 10px 14px;
+  background: white;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #4a5568;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: inherit;
+  text-align: center;
+}
+
+.pill:hover {
+  border-color: #cbd5e0;
+  background: #f7fafc;
+}
+
+.pill-active {
+  background: #3182ce;
+  border-color: #3182ce;
+  color: white;
+}
+
+.pill-active:hover {
+  background: #2c5282;
+  border-color: #2c5282;
+}
+
+.recurrence-options {
+  padding: 12px;
+  background: #f7fafc;
+  border-radius: 6px;
+  margin-top: 8px;
+}
+
+.radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.radio-group label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 400;
+  cursor: pointer;
+}
+
+.modal-footer {
+  padding: 16px 24px;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+/* Detail Modal */
+.detail-table {
+  width: 100%;
+}
+
+.detail-table tr td {
+  padding: 8px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.detail-table tr td:first-child {
+  font-weight: 500;
+  color: #4a5568;
+  width: 80px;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.status-badge.pending { background: #feebc8; color: #c05621; }
+.status-badge.approved { background: #c6f6d5; color: #276749; }
+.status-badge.rejected { background: #fed7d7; color: #9b2c2c; }
+
+/* Toast */
+.toast {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  padding: 14px 20px;
+  background: #38a169;
+  color: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 2000;
+  animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+/* ── Daily Room View (공간별 일 뷰) ── */
+.daily-view-wrapper {
+  background: white;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.daily-nav {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+.daily-date-label {
+  margin-left: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1a365d;
+}
+
+/* 줌 컨트롤 */
+.daily-zoom-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  background: #edf2f7;
+  border-radius: 6px;
+  padding: 2px;
+}
+
+.zoom-btn {
+  background: white;
+  border: 1px solid #cbd5e0;
+  border-radius: 4px;
+  width: 28px;
+  height: 28px;
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  color: #4a5568;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: inherit;
+}
+
+.zoom-btn:hover:not(:disabled) {
+  background: #f7fafc;
+  border-color: #a0aec0;
+}
+
+.zoom-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.zoom-label {
+  font-size: 0.8rem;
+  color: #4a5568;
+  min-width: 42px;
+  text-align: center;
+  font-weight: 600;
+}
+
+.daily-grid-scroll {
+  overflow: auto;
+  /* 한 화면 안에서 가로/세로 스크롤 가능하도록 max-height 제한 */
+  max-height: calc(100vh - 280px);
+  min-height: 400px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  position: relative;
+  user-select: none;
+  /* 모바일에서 핀치 줌 + 가로/세로 패닝 모두 허용 */
+  touch-action: pinch-zoom pan-x pan-y;
+  -webkit-overflow-scrolling: touch;
+}
+
+.daily-view-wrapper {
+  touch-action: pinch-zoom pan-x pan-y;
+}
+
+.daily-grid {
+  display: flex;
+  width: max-content;
+  min-width: 100%;
+  background: white;
+  position: relative;
+}
+
+/* 시간 컬럼: sticky로 좌측 고정 (JS transform 안 씀) */
+.daily-time-col {
+  position: sticky;
+  left: 0;
+  background: white;
+  z-index: 10;
+  border-right: 2px solid #cbd5e0;
+  flex-shrink: 0;
+  box-shadow: 2px 0 4px rgba(0, 0, 0, 0.06);
+}
+
+.daily-time-col .daily-room-header {
+  background: #f7fafc;
+  z-index: 15;
+}
+
+.daily-room-col {
+  /* width는 inline style로 동적 적용됨 (컬럼 적으면 늘어나고 많으면 110px) */
+  flex-shrink: 0;
+  border-right: 1px solid #e2e8f0;
+}
+
+.daily-room-col:last-child {
+  border-right: none;
+}
+
+/* 공간 헤더: 세로 스크롤 시 상단에 고정 */
+.daily-room-header {
+  background: #f7fafc;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 6px 4px;
+  text-align: center;
+  font-size: 0.7rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+
+.daily-time-col .daily-room-header {
+  font-weight: 600;
+  color: #4a5568;
+}
+
+.daily-building-label {
+  font-weight: 700;
+  font-size: 0.7rem;
+}
+
+.daily-room-label {
+  font-weight: 500;
+  font-size: 0.78rem;
+  color: #2d3748;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.daily-time-row {
+  font-size: 0.7rem;
+  color: #718096;
+  text-align: right;
+  padding: 2px 6px 0 0;
+  box-sizing: border-box;
+  border-bottom: 1px dashed #f0f0f0;
+}
+
+.daily-room-body {
+  position: relative;
+}
+
+.daily-cell {
+  box-sizing: border-box;
+}
+
+.daily-event {
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  border-radius: 4px;
+  padding: 4px 6px;
+  font-size: 0.7rem;
+  color: white;
+  cursor: pointer;
+  overflow: hidden;
+  border-width: 2px;
+  z-index: 2;
+  line-height: 1.25;
+  transition: transform 0.1s;
+}
+
+.daily-event:hover {
+  transform: scale(1.02);
+  z-index: 3;
+}
+
+.daily-event-time {
+  font-weight: 600;
+  font-size: 0.65rem;
+  opacity: 0.95;
+}
+
+.daily-event-purpose {
+  font-weight: 600;
+  font-size: 0.72rem;
+  margin-top: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.daily-event-applicant {
+  font-size: 0.65rem;
+  opacity: 0.85;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 통합 뷰 토글 (목록 / 월 / 주 / 일) */
+.view-mode-toggle {
+  display: flex;
+  margin-left: auto;
+  background: #2d3748;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.view-toggle-btn {
+  background: transparent;
+  color: white;
+  border: none;
+  padding: 8px 18px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+  font-family: inherit;
+}
+
+.view-toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.view-toggle-btn.active {
+  background: #4a5568;
+  font-weight: 600;
+}
+
+@media (max-width: 768px) {
+  .view-mode-toggle {
+    margin-left: 0;
+    width: 100%;
+  }
+  .view-toggle-btn {
+    flex: 1;
+    padding: 8px 0;
+    font-size: 0.8rem;
+  }
+}
+
+/* Auth area */
+.auth-area {
+  margin-top: 12px;
+}
+
+.admin-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: center;
+}
+
+.admin-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  background: #3182ce;
+  color: white;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.admin-name {
+  font-size: 0.85rem;
+  color: #4a5568;
+}
+
+.btn-sm {
+  padding: 5px 12px !important;
+  font-size: 0.8rem !important;
+}
+
+.google-login-btn {
+  display: flex;
+  justify-content: center;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .app-container {
+    padding: 8px;
+  }
+
+  .app-header {
+    padding: 12px 0;
+    margin-bottom: 12px;
+  }
+
+  .app-header h1 {
+    font-size: 1.15rem;
+  }
+
+  .app-header p {
+    font-size: 0.75rem;
+  }
+
+  .filters {
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .filters select {
+    width: 100%;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .form-row-3 {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .time-picker {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .modal {
+    max-width: 100%;
+    margin: 8px;
+    max-height: 95vh;
+  }
+
+  .modal-header {
+    padding: 14px 16px;
+  }
+
+  .modal-body {
+    padding: 16px;
+  }
+
+  .modal-footer {
+    padding: 12px 16px;
+    gap: 8px;
+  }
+
+  .modal-footer .btn {
+    padding: 8px 12px;
+    font-size: 0.8rem;
+  }
+
+  /* 캘린더 자체 최적화 */
+  .fc {
+    padding: 6px;
+    border-radius: 8px;
+  }
+
+  .fc .fc-toolbar {
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 8px !important;
+  }
+
+  .fc .fc-toolbar-title {
+    font-size: 1rem !important;
+  }
+
+  .fc .fc-button {
+    font-size: 0.75rem !important;
+    padding: 4px 8px !important;
+  }
+
+  /* 날짜 칸 글자 크기 축소 */
+  .fc .fc-col-header-cell-cushion,
+  .fc .fc-daygrid-day-number {
+    font-size: 0.75rem !important;
+    padding: 2px 4px !important;
+  }
+
+  /* 이벤트(예약) 표시 모바일 최적화 */
+  .fc-event {
+    font-size: 0.65rem !important;
+    padding: 1px 3px !important;
+    margin-bottom: 1px !important;
+    line-height: 1.2 !important;
+  }
+
+  .fc-daygrid-day-events {
+    margin-top: 1px;
+  }
+
+  /* "+N more" 링크 */
+  .fc-daygrid-more-link {
+    font-size: 0.65rem !important;
+  }
+
+  /* 범례 작게 */
+  .legend {
+    gap: 8px;
+    font-size: 0.7rem;
+  }
+
+  .legend-item {
+    font-size: 0.7rem;
+  }
+
+  /* 우측 하단 신청 버튼 */
+  .btn-add {
+    bottom: 16px;
+    right: 16px;
+    padding: 10px 16px;
+    font-size: 0.85rem;
+  }
+
+  /* 인증 영역 (Google 로그인 버튼) */
+  .auth-area {
+    margin-top: 8px;
+  }
+
+  .admin-bar {
+    flex-wrap: wrap;
+    gap: 6px;
+    font-size: 0.75rem;
+  }
+
+  /* 시간 그리드 뷰(주간) — 시간 슬롯 좁게 */
+  .fc-timegrid-slot {
+    height: 1.6em !important;
+  }
+
+  .fc-timegrid-slot-label {
+    font-size: 0.7rem !important;
+  }
+}
+
+/* 매우 작은 화면 (아이폰 SE 등) */
+@media (max-width: 380px) {
+  .app-header h1 {
+    font-size: 1rem;
+  }
+
+  .fc-event {
+    font-size: 0.6rem !important;
+  }
+
+  .fc .fc-toolbar-title {
+    font-size: 0.9rem !important;
+  }
+}

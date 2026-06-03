@@ -1,0 +1,35 @@
+# Dependencies
+node_modules/
+
+# Build output
+client/dist/
+dist/
+
+# Environment / secrets (NEVER commit)
+.env
+.env.local
+*.env
+!.env.example
+
+# SQLite database (including WAL/SHM sidecar files)
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+*.sqlite3
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+
+# Editor
+.vscode/
+.idea/
+
+# Claude Code local settings
+.claude/
+
+# Vite temp files
+vite.config.js.timestamp-*.mjs
