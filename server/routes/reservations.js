@@ -392,10 +392,17 @@ function generateDates(startDate, recurrenceType, recurrenceDays, endDate) {
 
   const dates = [];
   const start = new Date(startDate);
-  // 종료일 미지정 시 1년(365일)로 확장
-  const end = endDate ? new Date(endDate) : new Date(start.getTime() + 365 * 24 * 60 * 60 * 1000);
+  // 종료일 미지정 시 기본 범위: 매일은 31일, 매주/매월은 1년(365일)
+  const defaultSpanDays = recurrenceType === 'daily' ? 31 : 365;
+  const end = endDate ? new Date(endDate) : new Date(start.getTime() + defaultSpanDays * 24 * 60 * 60 * 1000);
 
-  if (recurrenceType === 'weekly') {
+  if (recurrenceType === 'daily') {
+    let current = new Date(start);
+    while (current <= end) {
+      dates.push(current.toISOString().split('T')[0]);
+      current.setDate(current.getDate() + 1);
+    }
+  } else if (recurrenceType === 'weekly') {
     let current = new Date(start);
     while (current <= end) {
       dates.push(current.toISOString().split('T')[0]);

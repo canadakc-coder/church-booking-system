@@ -32,11 +32,13 @@ export async function sendReservationNotification(reservation, room, building, p
   const rejectUrl = `${baseUrl}/api/reservations/${reservation.id}/reject?token=${reservation.approval_token}`;
   const placeList = formatPlaces(places, room, building);
 
-  const recurrenceText = reservation.recurrence_type === 'weekly'
-    ? `매주 반복 (종료: ${reservation.recurrence_end_date || '1년'})`
-    : reservation.recurrence_type === 'monthly'
-      ? `매월 반복 (종료: ${reservation.recurrence_end_date || '1년'})`
-      : '반복 없음';
+  const recurrenceText = reservation.recurrence_type === 'daily'
+    ? `매일 반복 (종료: ${reservation.recurrence_end_date || '1개월'})`
+    : reservation.recurrence_type === 'weekly'
+      ? `매주 반복 (종료: ${reservation.recurrence_end_date || '1년'})`
+      : reservation.recurrence_type === 'monthly'
+        ? `매월 반복 (종료: ${reservation.recurrence_end_date || '1년'})`
+        : '반복 없음';
 
   const html = `
     <div style="font-family: 'Apple SD Gothic Neo', sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">

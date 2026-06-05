@@ -387,6 +387,7 @@ export default function ReservationForm({ buildings, rooms, onClose, onSuccess, 
                 <div className="recurrence-pills">
                   {[
                     { value: 'none', label: '반복 없음' },
+                    { value: 'daily', label: '매일 반복' },
                     { value: 'weekly', label: '매주 반복' },
                     { value: 'monthly', label: '매월 반복' },
                   ].map((opt) => (
@@ -402,7 +403,7 @@ export default function ReservationForm({ buildings, rooms, onClose, onSuccess, 
                 </div>
                 {form.recurrence_type !== 'none' && (
                   <div style={{ marginTop: '10px' }}>
-                    <label style={{ fontSize: '0.8rem', color: '#4a5568' }}>반복 종료일 (미입력 시 1년)</label>
+                    <label style={{ fontSize: '0.8rem', color: '#4a5568' }}>반복 종료일 (미입력 시 {form.recurrence_type === 'daily' ? '1개월' : '1년'})</label>
                     <input type="date" name="recurrence_end_date" value={form.recurrence_end_date} onChange={handleChange} style={{ marginTop: '4px' }} />
                   </div>
                 )}

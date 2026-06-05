@@ -16,6 +16,7 @@ export default function ReservationDetail({ reservation, onClose, isAdmin, admin
 
   const recurrenceMap = {
     none: '반복 없음',
+    daily: `매일 반복 (종료: ${r.recurrence_end_date || '1개월'})`,
     weekly: `매주 반복 (종료: ${r.recurrence_end_date || '1년'})`,
     monthly: `매월 반복 (종료: ${r.recurrence_end_date || '1년'})`,
   };

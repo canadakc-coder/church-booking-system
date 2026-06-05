@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS reservations (
   notes TEXT DEFAULT '',
   status TEXT DEFAULT 'pending' CHECK(status IN ('pending', 'approved', 'rejected')),
   rejection_reason TEXT DEFAULT NULL,
-  recurrence_type TEXT DEFAULT 'none' CHECK(recurrence_type IN ('none', 'weekly', 'monthly')),
+  recurrence_type TEXT DEFAULT 'none' CHECK(recurrence_type IN ('none', 'daily', 'weekly', 'monthly')),
   recurrence_days TEXT DEFAULT NULL,
   recurrence_end_date TEXT DEFAULT NULL,
   recurrence_group_id TEXT DEFAULT NULL,

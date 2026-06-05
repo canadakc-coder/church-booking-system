@@ -16,6 +16,9 @@ dist/
 *.sqlite-wal
 *.sqlite-shm
 *.sqlite3
+# DB 백업 (마이그레이션 등에서 생성)
+*.sqlite.bak*
+*.bak-daily
 
 # Logs
 *.log

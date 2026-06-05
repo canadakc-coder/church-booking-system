@@ -300,6 +300,14 @@
 - **④ 관리자 신규 등록 시 신청자 이름 기본값 "관리자"**: `applicant_name` 초기값 `source?.applicant_name || (isAdmin && !isEdit ? '관리자' : '')` (수정/복제는 원본 유지, 편집 가능).
 - 검증: 폼 시옵션 07·23 확인, 일뷰 07:00 시작, 백엔드 관리자=이메일없이 성공·일반=400, 헤더 "관리자 로그인" 구석 배치·클릭 시 Google 버튼 렌더 확인. 프로덕션 빌드 OK. DB 스키마 변경 없음.
 
+### 2026-06-05 — "매일 반복" 추가 (⚠️ DB 마이그레이션 동반)
+- **요청**: 신청 반복 옵션에 매일(daily) 추가 (기존 없음/매주/매월).
+- **⚠️ 함정**: `reservations.recurrence_type`에 `CHECK(IN('none','weekly','monthly'))` 제약이 있어 'daily' insert가 거부됨. SQLite는 컬럼 CHECK를 직접 못 바꿔 **테이블 재생성 마이그레이션** 필요.
+- **마이그레이션**: `server/db/migrate_daily.js` (멱등 — 이미 daily 허용이면 스킵, 실행 전 `database.sqlite.bak-daily` 백업, 컬럼명 기준 복사로 컬럼순서 차이 안전, 인덱스 재생성, 행 수·FK 검증). 로컬 265→265행·FK0 정상. `schema.sql`의 CHECK도 daily 포함으로 갱신(신규 설치용).
+- **코드**: `generateDates`에 daily(+1일) 케이스, 종료일 미입력 시 기본 매일=31일/매주·매월=1년. 폼 pill에 "매일 반복" 추가 + 종료일 안내 동적("매일=1개월"). 이메일·상세모달 반복문구에 daily 추가.
+- 검증: 로컬 마이그레이션 후 daily POST 성공(종료일 지정 5일→5건, 미지정→32건≈1개월, 그룹 묶음), 폼 4-pill 표시·안내문 "1개월" 확인, 빌드 OK.
+- **배포 시 필수**: git pull 후 **`cd server && node db/migrate_daily.js` 실행**(백엔드 재시작 전) → client build → pm2 restart. (마이그레이션은 멱등이라 재실행 안전.)
+
 ### 2026-06-04 (Day 4 저녁) — 교회 명의 계정 이전 시도 (보류)
 - **이유**: 현재 서버가 joseph 개인 Oracle 계정(josephwang07)에 종속. 교회 자산화하려면 교회 이메일로 새 계정 필요. (휴대폰·카드는 가입 후 변경 가능, **이메일만 영구 고정**이라 처음부터 교회 것이어야 함)
 - **새 계정 생성 완료**: 교회 계정 = **canadakc** (compartment canadakc root), 홈리전 **US West (Phoenix, us-phoenix-1)** 선택 — Phoenix는 **AD 3개**라 토론토(1개)보다 용량 유리 + 밴쿠버에서 가까움. (데이터는 미국 보관)
