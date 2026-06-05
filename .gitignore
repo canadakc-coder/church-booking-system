@@ -33,3 +33,6 @@ npm-debug.log*
 
 # Vite temp files
 vite.config.js.timestamp-*.mjs
+
+# 운영/인프라 정보 (서버 IP·계정·접속정보 — 공개 금지)
+DEPLOYMENT_INFO.md

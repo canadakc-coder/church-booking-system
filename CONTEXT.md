@@ -215,10 +215,109 @@
 
 ---
 
+### 2026-06-03 (Day 4) — 배포 1단계(GitHub) 완료
+
+**완료된 작업**
+- 루트 `.gitignore` 생성 — `.env`, SQLite(`-wal`/`-shm` 사이드카 포함), node_modules, `.claude/`, Vite 임시파일 차단
+  - 기존 `server/.gitignore`는 `db/database.sqlite`만 막아 WAL/SHM 누출 위험 있었음 → 루트에서 `*.sqlite*` 전부 차단으로 보완
+- `git init` → `main` 브랜치 → 초기 커밋 (34개 파일)
+  - 커밋 전 `git check-ignore`로 `server/.env`·DB 3종 제외 검증 통과
+  - node_modules·비밀키 미포함 확인
+- GitHub 저장소 생성: **https://github.com/canadakc-coder/church-booking-system** (Public)
+  - GitHub 계정: `canadakc-coder` (소유자 표시), 가입 이메일 추정 joseph.wang07@gmail.com
+- `git remote add origin` + `git push -u origin main` 성공 (사용자가 터미널에서 직접 실행)
+  - 인증: HTTPS + Personal Access Token (classic, `repo` scope). 비밀번호 방식 불가 → PAT 발급해서 푸시
+  - **푸시 후 안전 검증 통과**: 원격에 `.env`/`.sqlite` 없음, `server/.env.example`만 포함
+
+**배포 2단계 = Oracle Cloud 무료 가입 + VM 생성 — ✅ 완료!**
+- Oracle 무료 계정 생성: 홈리전 **Canada Southeast (Toronto, ca-toronto-1)** / 클라우드계정 `josephwang07` / 로그인 joseph.wang07@gmail.com / MFA 등록됨
+- ⚠️ **용량 전쟁**: ARM(A1.Flex 4코어/24GB → 1코어) 계속 "Out of capacity", AMD 마이크로(E2.1.Micro)도 한때 out → 토론토 무료 물량이 congested. 손 재시도 중 "Too many requests" rate limit도 발생.
+  - **해결책**: 인스턴스 설정을 **"Save as stack"** 으로 Resource Manager 스택 저장(joseph-cloud-server) → 스택 **Apply** 재시도로 결국 잡힘. 앞으로 용량 재시도는 이 스택에서 **Actions → Apply** 한 번이면 됨(마법사 재작성 불필요).
+- **생성된 서버**: 이름 `joseph-cloud-server`, **VM.Standard.E2.1.Micro (AMD, Always Free, 1 OCPU/1GB)**, Ubuntu 22.04, AD-1/FD-3
+  - **Private IP**: 10.0.0.186
+  - ⭐ **Public IP (Ephemeral): `40.233.84.235`** ⭐
+  - VCN: vcn-20260603-1647 / 공개 서브넷 subnet-20260603-1647 (CIDR 10.0.0.0/24)
+  - SSH 키페어: Oracle "Generate a key pair for me"로 생성, **private/public 키 진규님이 다운로드** (서버 접속 열쇠)
+- 💡 메모: 1GB RAM이라 서버 세팅 시 **스왑 2GB 추가** 필요(특히 client `npm run build` OOM 방지). 나중에 ARM 4코어 잡히면 멀티사이트용으로 이전/확장 고려.
+
+**배포 3단계(방화벽) + 4단계(서버 세팅) — ✅ 완료! 앱 라이브!**
+- **방화벽**: VCN Default Security List에 Ingress TCP 80/443 (0.0.0.0/0) 추가 완료 (기존 22 SSH + ICMP에 더해)
+- **SSH 접속**: 개인키 = `/Users/pastorwang/Documents/Oracle key/ssh-key-2026-06-03.key` (이 키로 접속 성공 확인). 접속: `ssh -i "<키경로>" ubuntu@40.233.84.235`
+- **서버 세팅 완료** (에이전트가 SSH로 수행):
+  - 스왑 2GB 생성(/swapfile, /etc/fstab 등록) — 1GB RAM 보완
+  - Node.js 22.22.3, npm 10.9.8, PM2 7.0.1, Nginx 1.18, git, build-essential 설치
+  - `git clone https://github.com/canadakc-coder/church-booking-system.git` → `~/church-booking-system`
+  - server: `npm install` (better-sqlite3 컴파일 OK), client: `npm install` + `npm run build`(dist 생성)
+  - **server/.env**: 로컬 .env를 scp로 복사 후 FRONTEND_URL/BASE_URL만 `http://40.233.84.235`로 수정 (SMTP_PASS·GOOGLE_CLIENT_ID 등 비밀값 그대로). chmod 600.
+  - DB: `node db/init.js`(건물3·장소23) + `migrate.js` + `seed.js` 완료
+  - PM2: `pm2 start index.js --name booking-api` + `pm2 save` + `pm2 startup systemd`(부팅 자동시작)
+  - Nginx: `/etc/nginx/sites-available/booking` — dist 정적 서빙 + `/api` → localhost:3001 프록시. server_name에 IP·booking.kwanglim.ca 둘 다. default 사이트 제거.
+  - OS 방화벽(iptables): INPUT에 80/443 ACCEPT 삽입 + netfilter-persistent save (Oracle Ubuntu는 ufw 아닌 iptables 사용)
+- ✅ **외부 접속 검증**: `http://40.233.84.235/` → 200, `/api/buildings` → 정상 JSON. **앱 라이브!**
+
+**배포 5단계(DNS) + 6단계(SSL) — ✅ 완료! 정식 주소 라이브!**
+- ⚠️ **DNS는 HostPapa가 아니라 Wix가 관리** (네임서버 ns6/ns7.wixdns.net). HostPapa는 도메인 등록만(웹호스팅 없음). 교회 메인사이트도 Wix.
+  - `dig NS kwanglim.ca` → wixdns / kwanglim.ca A → 185.230.63.x (Wix) / mail.kwanglim.ca → 45.56.219.122
+- **A 레코드 추가**: Wix 대시보드(Kwanglim Church) → 설정 → 도메인 → kwanglim.ca → ⋯ → **DNS 레코드 관리** → A 레코드 추가:
+  - **호스트명 `booking` → 값 `40.233.84.235`** (TTL 1시간). 기존 레코드는 안 건드림.
+  - 전파 빠름 — 추가 직후 8.8.8.8에서 즉시 조회됨.
+- **SSL**: 서버에서 `sudo certbot --nginx -d booking.kwanglim.ca --agree-tos -m kmcreservation@gmail.com --redirect` → Let's Encrypt 인증서 발급 성공(2026-09-03 만료, 자동갱신 설정됨). nginx에 HTTPS+HTTP→HTTPS 301 적용.
+- **server/.env** FRONTEND_URL·BASE_URL을 `https://booking.kwanglim.ca`로 변경 → `pm2 restart booking-api --update-env`
+- ✅ **최종 검증**: `https://booking.kwanglim.ca/` → 200, `/api/buildings` 정상, HTTP→HTTPS 301, 인증서 CN=booking.kwanglim.ca 확인.
+
+## 🎉 배포 완료 — 앱 라이브: https://booking.kwanglim.ca
+
+> ⚠️ **운영·접속 상세 정보는 `DEPLOYMENT_INFO.md`(gitignore, 비공개)에 갈무리됨.** 다음 작업 시 그 파일부터 읽을 것. (서버 IP·SSH키·계정·서버 내부구조·이전 절차·버그 디버그 출발점 포함)
+
+### 2026-06-05 — 마무리 작업 + 버그 발견
+- ✅ **관리자 로그인(Google OAuth) 완료·검증**: kwanglim-space 프로젝트 OAuth Client에 `https://booking.kwanglim.ca` Authorized JS origins 추가 → kmcreservation@gmail.com으로 "관리자" 모드 로그인 확인됨.
+- ✅ **Wix 홈페이지 메뉴에 "장소 예약" 링크 추가·게시 완료** (→ https://booking.kwanglim.ca, 새 탭)
+- 🐛 **버그 발견 (다음 세션에서 수정)**: 신청 폼("+ 일정 등록"/공간 신청서)의 **입력칸에 타이핑이 안 됨**.
+  - 폼: `client/src/components/ReservationForm.jsx` (코드상 표준 controlled input, 명백한 결함은 안 보임)
+  - 디버그 출발점: ① 라이브 사이트 브라우저 콘솔에서 JS 에러 확인 ② 로컬 dev에서 재현되는지 확인(재현=코드버그/미재현=빌드·환경) ③ state 미갱신 vs 클릭 가로채는 오버레이 점검
+  - 수정 후 배포: git push → 서버 `git pull && cd client && npm run build` (+백엔드 변경시 `pm2 restart booking-api`)
+
+### 2026-06-05 (저녁) — "타이핑 안 됨" 버그 조사 → ✅ 재현 불가, 코드 버그 아님 (CLOSED)
+- **결론**: 일시적 환경 문제. 코드/빌드 결함 아님. (신고자도 재시도 시 정상 확인)
+- **검증 경로**: ① 코드 리뷰 — ReservationForm은 깨끗한 controlled input(차단 로직·전역 키핸들러·오버레이 없음), App.jsx도 `key` 없이 렌더(리마운트 없음) → ② 로컬 dev 타이핑 정상 → ③ 로컬 프로덕션 빌드(`vite preview`) 정상, 그 번들 해시가 **라이브 서빙 해시와 바이트 동일** → ④ 라이브 헤더에 CSP/X-Frame 없음, GSI 설정 동일 → ⑤ **라이브 실제 키보드 타이핑(Chrome) 데스크톱·모바일 모두 정상**.
+- **재발 시**: 기기/브라우저 + Google 로그인 여부부터 받기. 유력 가설(미확정) = 로그인 세션 있을 때 GSI/One Tap 포커스 가로채기. 상세는 `DEPLOYMENT_INFO.md` 버그 섹션.
+
+### 2026-06-05 — ✨ 여러 공간 동시 신청 기능 추가
+- **요청**: 기존엔 공간을 드롭다운으로 한 번에 하나만 선택 → 한 신청으로 여러 공간을 동시에 신청하도록.
+- **설계 결정(사용자 확인)**: ① 승인 단위 = 고른 공간을 **한 신청으로 묶어 일괄 승인/거절/삭제** ② 선택 UI = **체크박스 + 선택 칩**.
+- **저장 방식**: 기존 반복 일정 인프라 재사용 — 공간마다 1행 생성 후 `recurrence_group_id`로 묶음(승인/거절/삭제/이메일이 전부 그룹 기준 동작). 공간이 2개↑ 또는 반복이면 그룹 부여, 단일+비반복이면 그룹 없음(기존과 동일).
+- **백엔드**(`server/routes/reservations.js`): POST가 `room_ids`(배열) 받음(하위호환: `room_id` 단일도 허용). 공간×날짜로 행 생성, 묶음은 **승인 토큰 공유**(이메일 링크 한 번으로 그룹 전체 승인). `getPlaceLabels()` 헬퍼로 승인/거절/신청 알림 메일에 **모든 공간 표기**. (부수 수정: `contact` NOT NULL 방어 `contact || ''`)
+- **이메일**(`server/services/email.js`): 3개 알림 함수에 `places` 배열 인자 추가 → 여러 공간이면 "N개 공간" 목록 + 제목 "○○ 외 N곳".
+- **프론트**(`ReservationForm.jsx`): 공간 `<select>` → 체크박스 목록 + "선택한 공간" 칩(× 제거). 건물/층은 목록 필터일 뿐 선택은 유지(건물·층 넘나들며 다중 선택 가능). 수정 모드는 단일(radio)로 동작. `styles.css`에 `.room-checkbox-list`/`.room-chip` 등 추가. 상세/수정 모달의 "반복" 문구를 묶음 성격(반복 vs 여러 공간)에 맞게 일반화.
+- **검증**: 로컬에서 3공간→3행 그룹, 2공간×5주→10행 그룹, 단일→그룹없음, UI 제출 4공간(건물·층 혼합)→4행 1그룹 모두 정상. 프로덕션 빌드 OK.
+- ⚠️ **미배포**: 코드 변경은 로컬에만 있음. 배포하려면 git push → 서버 `git pull && cd client && npm run build && pm2 restart booking-api`(백엔드도 바뀌었으므로 재시작 필수). **서버 DB 스키마 변경 없음**(마이그레이션 불필요).
+
+### 2026-06-04 (Day 4 저녁) — 교회 명의 계정 이전 시도 (보류)
+- **이유**: 현재 서버가 joseph 개인 Oracle 계정(josephwang07)에 종속. 교회 자산화하려면 교회 이메일로 새 계정 필요. (휴대폰·카드는 가입 후 변경 가능, **이메일만 영구 고정**이라 처음부터 교회 것이어야 함)
+- **새 계정 생성 완료**: 교회 계정 = **canadakc** (compartment canadakc root), 홈리전 **US West (Phoenix, us-phoenix-1)** 선택 — Phoenix는 **AD 3개**라 토론토(1개)보다 용량 유리 + 밴쿠버에서 가까움. (데이터는 미국 보관)
+- **⚠️ 용량 벽 (다시)**: Phoenix도 ARM/AMD 다 품절 상태 — 4코어 ARM(AD-2) fail, 1코어 ARM(AD-1) fail, AMD E2.1.Micro도 "현재 AD에서 불가". 토론토보다 나을 줄 알았으나 이날 밤 congested.
+- **현재 상태**: 인스턴스 설정을 **스택으로 저장**(Resource Manager → Stacks, "canadakc01" = 4코어 ARM). 보류하고 토론토 운영 서버 유지.
+- **다음에 이어갈 것 (이전 재개 시)**:
+  - 새벽/이른 아침(밴쿠버) 등 한가한 시간에 재시도하면 잡힐 확률↑
+  - 4코어 스택만 붙들지 말고 → **AMD(E2.1.Micro)** 또는 **1코어 ARM + AD를 AD-1/2/3 바꿔가며** 시도 (스택은 저장된 사양/AD 고정이라 변경하려면 Create 마법사 새로)
+  - 서버 잡히면: 토론토에서 한 세팅 그대로 재실행(스왑·Node·Nginx·PM2·clone·.env scp·db·pm2 startup) → Wix DNS의 booking A레코드를 **새 IP로 변경** → certbot SSL 재발급 → 검증
+  - **이전 완료 후** 토론토(joseph 계정) 인스턴스·VCN 정리(종료)
+- 💡 급하지 않음: 앱은 https://booking.kwanglim.ca (토론토)에서 정상 운영 중. 이전은 부가 작업.
+
+**남은 선택 작업 (운영 편의)**
+- ⏭️ **Google OAuth (관리자 로그인용)**: console.cloud.google.com → 프로젝트 `kwanglim-space` → OAuth Client ID → Authorized JavaScript origins에 `https://booking.kwanglim.ca` 추가. (이거 해야 `kmcreservation@gmail.com` 관리자 로그인 작동. 일반 공간신청·이메일승인은 이미 작동)
+- ⏭️ **Wix 메뉴 링크**: 교회 홈페이지 메뉴에 `장소 예약` → https://booking.kwanglim.ca (새 탭)
+- ⏭️ (선택) 실패 시도로 생긴 빈 VCN 3개(vcn06031650 x2, vcn06031640) Oracle에서 삭제
+- ⏭️ (선택) 통합 테스트: 신청 폼 제출 → canadakc@gmail.com 알림메일 → 승인/거절 링크 → 신청자 메일 수신 흐름 확인
+- 💡 1GB RAM이라 추후 ARM 4코어 잡히면 이전/확장 고려 (joseph-cloud-server 스택 Actions→Apply 재시도)
+
+---
+
 ## 현재 진행 중
 
-- 배포 지시서 작성 완료 (`20260508_배포_지시서_Chrome.md`) — 실제 배포 실행 대기 중
-- Chrome 에이전트에 지시서 전달 후 7단계 순서대로 진행 예정
+- ✅ 배포 1단계(GitHub 푸시) 완료 — 코드 공개 저장소에 안전하게 업로드됨
+- ⏸️ 배포 2단계(Oracle Cloud VM) 진행 중 — 결제검증 rate limit으로 일시 중단, 시간 두고 재시도 예정
+- 이후 지시서(`20260508_배포_지시서_Chrome.md`) 3~7단계(DNS → SSH 서버세팅 → OAuth → Wix → 테스트) 순서대로
 
 ---
 

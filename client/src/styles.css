@@ -432,6 +432,114 @@ body {
   margin-bottom: 16px;
 }
 
+/* 공간 다중 선택: 체크박스 목록 */
+.room-multi-hint {
+  font-size: 0.72rem;
+  font-weight: 400;
+  color: #718096;
+}
+
+.room-picker-empty {
+  padding: 10px 12px;
+  border: 1px dashed #cbd5e0;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  color: #a0aec0;
+  background: #f7fafc;
+}
+
+.room-checkbox-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 168px;
+  overflow-y: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 6px;
+}
+
+.room-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 5px;
+  font-size: 0.85rem;
+  font-weight: 400;
+  color: #2d3748;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.room-checkbox:hover {
+  background: #f7fafc;
+}
+
+.room-checkbox.checked {
+  background: #ebf8ff;
+  color: #2b6cb0;
+  font-weight: 500;
+}
+
+/* .form-group input{width:100%} 가 체크박스/라디오에 적용되지 않도록 override */
+.room-checkbox input {
+  width: auto;
+  margin: 0;
+  flex-shrink: 0;
+  accent-color: #3182ce;
+  cursor: pointer;
+}
+
+/* 선택한 공간 칩 */
+.selected-rooms-count {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #3182ce;
+  background: #ebf8ff;
+  padding: 1px 7px;
+  border-radius: 10px;
+  margin-left: 4px;
+}
+
+.room-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.room-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 6px 4px 10px;
+  background: #3182ce;
+  color: white;
+  border-radius: 14px;
+  font-size: 0.78rem;
+  font-weight: 500;
+}
+
+.room-chip-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.25);
+  color: white;
+  font-size: 0.9rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+}
+
+.room-chip-remove:hover {
+  background: rgba(255, 255, 255, 0.45);
+}
+
 /* 시간 picker (시 / 분 분리) */
 .time-picker {
   display: grid;

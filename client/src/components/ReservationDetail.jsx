@@ -152,7 +152,7 @@ export default function ReservationDetail({ reservation, onClose, isAdmin, admin
                 <button className="btn btn-secondary" style={{ padding: '6px 14px', fontSize: '0.8rem' }} onClick={() => setConfirmDelete(false)}>취소</button>
                 {r.recurrence_group_id && (
                   <button className="btn" style={{ padding: '6px 14px', fontSize: '0.8rem', background: '#c53030', color: 'white' }} onClick={() => handleDelete(true)} disabled={loading === 'delete'}>
-                    반복 전체 삭제
+                    {r.recurrence_type && r.recurrence_type !== 'none' ? '반복 전체 삭제' : '묶음 전체 삭제'}
                   </button>
                 )}
                 <button className="btn" style={{ padding: '6px 14px', fontSize: '0.8rem', background: '#e53e3e', color: 'white' }} onClick={() => handleDelete(false)} disabled={loading === 'delete'}>

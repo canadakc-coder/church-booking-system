@@ -10,11 +10,27 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+// ── 장소 표기 헬퍼: places 배열이 있으면 그대로, 없으면 단일 room/building에서 생성 ──
+function formatPlaces(places, room, building) {
+  const list = (Array.isArray(places) && places.length > 0)
+    ? places
+    : [`${building?.name || ''} ${room?.floor || ''} - ${room?.name || ''}`.replace(/\s+/g, ' ').trim()];
+  return list;
+}
+function placesCellHtml(list) {
+  if (list.length === 1) return list[0];
+  return `<strong>${list.length}개 공간</strong><br>` + list.map((p) => `· ${p}`).join('<br>');
+}
+function placesSubject(list) {
+  return list.length > 1 ? `${list[0]} 외 ${list.length - 1}곳` : (list[0] || '');
+}
+
 // ── 관리자에게 신규 신청 알림 ──
-export async function sendReservationNotification(reservation, room, building) {
+export async function sendReservationNotification(reservation, room, building, places) {
   const baseUrl = process.env.BASE_URL || 'http://localhost:3001';
   const approveUrl = `${baseUrl}/api/reservations/${reservation.id}/approve?token=${reservation.approval_token}`;
   const rejectUrl = `${baseUrl}/api/reservations/${reservation.id}/reject?token=${reservation.approval_token}`;
+  const placeList = formatPlaces(places, room, building);
 
   const recurrenceText = reservation.recurrence_type === 'weekly'
     ? `매주 반복 (종료: ${reservation.recurrence_end_date || '1년'})`
@@ -31,7 +47,7 @@ export async function sendReservationNotification(reservation, room, building) {
       <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
         <tr><td style="padding: 8px; font-weight: bold; width: 120px;">신청자</td><td style="padding: 8px;">${reservation.applicant_name}</td></tr>
         <tr style="background: #f7fafc;"><td style="padding: 8px; font-weight: bold;">소속</td><td style="padding: 8px;">${reservation.department}</td></tr>
-        <tr><td style="padding: 8px; font-weight: bold;">장소</td><td style="padding: 8px;">${building.name} ${room.floor || ''} - ${room.name}</td></tr>
+        <tr><td style="padding: 8px; font-weight: bold; vertical-align: top;">장소</td><td style="padding: 8px;">${placesCellHtml(placeList)}</td></tr>
         <tr style="background: #f7fafc;"><td style="padding: 8px; font-weight: bold;">날짜</td><td style="padding: 8px;">${reservation.date}</td></tr>
         <tr><td style="padding: 8px; font-weight: bold;">시간</td><td style="padding: 8px;">${reservation.start_time} ~ ${reservation.end_time}</td></tr>
         <tr style="background: #f7fafc;"><td style="padding: 8px; font-weight: bold;">용도</td><td style="padding: 8px;">${reservation.purpose}</td></tr>
@@ -52,7 +68,7 @@ export async function sendReservationNotification(reservation, room, building) {
     from: `"카나다광림교회 공간신청" <${process.env.SMTP_USER}>`,
     to: process.env.NOTIFICATION_EMAIL || process.env.ADMIN_EMAIL || 'canadakc@gmail.com',
     replyTo: reservation.applicant_email || undefined,
-    subject: `[공간신청] ${reservation.applicant_name} - ${room.name} (${reservation.date})`,
+    subject: `[공간신청] ${reservation.applicant_name} - ${placesSubject(placeList)} (${reservation.date})`,
     html,
   };
 
@@ -65,11 +81,12 @@ export async function sendReservationNotification(reservation, room, building) {
 }
 
 // ── 신청자에게 승인 알림 ──
-export async function sendApprovalNotification(reservation, room, building) {
+export async function sendApprovalNotification(reservation, room, building, places) {
   if (!reservation.applicant_email) {
     console.log('No applicant email, skipping approval notification.');
     return;
   }
+  const placeList = formatPlaces(places, room, building);
 
   const html = `
     <div style="font-family: 'Apple SD Gothic Neo', sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
@@ -78,7 +95,7 @@ export async function sendApprovalNotification(reservation, room, building) {
       </h2>
       <p>${reservation.applicant_name}님, 공간 신청이 <strong style="color: #38a169;">승인</strong>되었습니다.</p>
       <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
-        <tr><td style="padding: 8px; font-weight: bold; width: 120px;">장소</td><td style="padding: 8px;">${building.name} ${room.floor || ''} - ${room.name}</td></tr>
+        <tr><td style="padding: 8px; font-weight: bold; width: 120px; vertical-align: top;">장소</td><td style="padding: 8px;">${placesCellHtml(placeList)}</td></tr>
         <tr style="background: #f7fafc;"><td style="padding: 8px; font-weight: bold;">날짜</td><td style="padding: 8px;">${reservation.date}</td></tr>
         <tr><td style="padding: 8px; font-weight: bold;">시간</td><td style="padding: 8px;">${reservation.start_time} ~ ${reservation.end_time}</td></tr>
         <tr style="background: #f7fafc;"><td style="padding: 8px; font-weight: bold;">용도</td><td style="padding: 8px;">${reservation.purpose}</td></tr>
@@ -95,7 +112,7 @@ export async function sendApprovalNotification(reservation, room, building) {
     await transporter.sendMail({
       from: `"카나다광림교회 공간신청" <${process.env.SMTP_USER}>`,
       to: reservation.applicant_email,
-      subject: `[승인] ${room.name} 공간 신청이 승인되었습니다 (${reservation.date})`,
+      subject: `[승인] ${placesSubject(placeList)} 공간 신청이 승인되었습니다 (${reservation.date})`,
       html,
     });
     console.log('Approval notification sent to:', reservation.applicant_email);
@@ -105,11 +122,12 @@ export async function sendApprovalNotification(reservation, room, building) {
 }
 
 // ── 신청자에게 거절 알림 ──
-export async function sendRejectionNotification(reservation, room, building, reason) {
+export async function sendRejectionNotification(reservation, room, building, reason, places) {
   if (!reservation.applicant_email) {
     console.log('No applicant email, skipping rejection notification.');
     return;
   }
+  const placeList = formatPlaces(places, room, building);
 
   const html = `
     <div style="font-family: 'Apple SD Gothic Neo', sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
@@ -118,7 +136,7 @@ export async function sendRejectionNotification(reservation, room, building, rea
       </h2>
       <p>${reservation.applicant_name}님, 공간 신청이 <strong style="color: #e53e3e;">거절</strong>되었습니다.</p>
       <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
-        <tr><td style="padding: 8px; font-weight: bold; width: 120px;">장소</td><td style="padding: 8px;">${building.name} ${room.floor || ''} - ${room.name}</td></tr>
+        <tr><td style="padding: 8px; font-weight: bold; width: 120px; vertical-align: top;">장소</td><td style="padding: 8px;">${placesCellHtml(placeList)}</td></tr>
         <tr style="background: #f7fafc;"><td style="padding: 8px; font-weight: bold;">날짜</td><td style="padding: 8px;">${reservation.date}</td></tr>
         <tr><td style="padding: 8px; font-weight: bold;">시간</td><td style="padding: 8px;">${reservation.start_time} ~ ${reservation.end_time}</td></tr>
         <tr style="background: #f7fafc;"><td style="padding: 8px; font-weight: bold;">용도</td><td style="padding: 8px;">${reservation.purpose}</td></tr>
@@ -136,7 +154,7 @@ export async function sendRejectionNotification(reservation, room, building, rea
     await transporter.sendMail({
       from: `"카나다광림교회 공간신청" <${process.env.SMTP_USER}>`,
       to: reservation.applicant_email,
-      subject: `[거절] ${room.name} 공간 신청이 거절되었습니다 (${reservation.date})`,
+      subject: `[거절] ${placesSubject(placeList)} 공간 신청이 거절되었습니다 (${reservation.date})`,
       html,
     });
     console.log('Rejection notification sent to:', reservation.applicant_email);

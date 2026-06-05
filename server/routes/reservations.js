@@ -55,33 +55,39 @@ router.get('/', (req, res) => {
   res.json(reservations);
 });
 
-// POST /api/reservations — 새 예약 신청
+// POST /api/reservations — 새 예약 신청 (여러 공간 동시 신청 지원)
 router.post('/', (req, res) => {
   const {
-    room_id, applicant_name, department, date, start_time, end_time,
+    room_id, room_ids, applicant_name, department, date, start_time, end_time,
     purpose, contact, applicant_email, notes,
     recurrence_type, recurrence_days, recurrence_end_date,
     created_by
   } = req.body;
 
+  // 공간 목록 정규화: room_ids(배열) 우선, 없으면 room_id(단일) 하위호환
+  const roomIdList = Array.isArray(room_ids) && room_ids.length > 0
+    ? [...new Set(room_ids.filter(Boolean))]
+    : (room_id ? [room_id] : []);
+
   // Validation — 이메일 필수 (승인/거절 알림 발송용), 전화번호는 선택
-  if (!room_id || !applicant_name || !department || !date || !start_time || !end_time || !purpose) {
-    return res.status(400).json({ error: '필수 항목을 모두 입력해주세요.' });
+  if (roomIdList.length === 0 || !applicant_name || !department || !date || !start_time || !end_time || !purpose) {
+    return res.status(400).json({ error: '필수 항목을 모두 입력해주세요. (공간을 한 곳 이상 선택해야 합니다)' });
   }
   if (!applicant_email) {
     return res.status(400).json({ error: '이메일은 필수 입력 항목입니다. (승인/거절 알림을 받기 위해 필요)' });
   }
 
-  const room = db.prepare('SELECT * FROM rooms WHERE id = ?').get(room_id);
-  if (!room) {
-    return res.status(400).json({ error: '존재하지 않는 장소입니다.' });
+  // 선택한 공간이 모두 존재하는지 확인
+  const rooms = roomIdList.map((rid) => db.prepare('SELECT * FROM rooms WHERE id = ?').get(rid));
+  if (rooms.some((rm) => !rm)) {
+    return res.status(400).json({ error: '존재하지 않는 장소가 포함되어 있습니다.' });
   }
 
-  const building = db.prepare('SELECT * FROM buildings WHERE id = ?').get(room.building_id);
-
   const isAdmin = created_by === 'admin';
-  const recurrenceGroupId = recurrence_type && recurrence_type !== 'none' ? uuidv4() : null;
   const dates = generateDates(date, recurrence_type, recurrence_days, recurrence_end_date);
+  // 공간이 여러 개이거나 반복 일정이면 한 신청으로 묶어서 처리 (승인/거절/삭제 일괄)
+  const isGrouped = roomIdList.length > 1 || (recurrence_type && recurrence_type !== 'none');
+  const groupId = isGrouped ? uuidv4() : null;
 
   const insertStmt = db.prepare(`
     INSERT INTO reservations (id, room_id, applicant_name, department, date, start_time, end_time, purpose, contact, applicant_email, notes, recurrence_type, recurrence_days, recurrence_end_date, recurrence_group_id, approval_token, status, created_by)
@@ -89,35 +95,47 @@ router.post('/', (req, res) => {
   `);
 
   const createdReservations = [];
+  // 묶음 신청은 같은 승인 토큰을 공유 (이메일 링크 한 번으로 그룹 전체 승인/거절)
+  const sharedToken = uuidv4();
 
-  const insertMany = db.transaction((datesToInsert) => {
-    for (const d of datesToInsert) {
-      const id = uuidv4();
-      const token = uuidv4();
-      // 관리자가 만든 예약은 자동 승인
-      const initialStatus = isAdmin ? 'approved' : 'pending';
-      insertStmt.run(
-        id, room_id, applicant_name, department, d, start_time, end_time,
-        purpose, contact, applicant_email || '', notes || '',
-        recurrence_type || 'none', recurrence_days || null, recurrence_end_date || null,
-        recurrenceGroupId, token, initialStatus, isAdmin ? 'admin' : 'user'
-      );
-      createdReservations.push({ id, date: d, approval_token: token });
+  const insertMany = db.transaction(() => {
+    for (const rid of roomIdList) {
+      for (const d of dates) {
+        const id = uuidv4();
+        const token = groupId ? sharedToken : uuidv4();
+        // 관리자가 만든 예약은 자동 승인
+        const initialStatus = isAdmin ? 'approved' : 'pending';
+        insertStmt.run(
+          id, rid, applicant_name, department, d, start_time, end_time,
+          purpose, contact || '', applicant_email || '', notes || '',
+          recurrence_type || 'none', recurrence_days || null, recurrence_end_date || null,
+          groupId, token, initialStatus, isAdmin ? 'admin' : 'user'
+        );
+        createdReservations.push({ id, room_id: rid, date: d, approval_token: token });
+      }
     }
   });
 
-  insertMany(dates);
+  insertMany();
 
-  // 일반 사용자 신청만 관리자에게 이메일 발송
+  // 일반 사용자 신청만 관리자에게 이메일 발송 (한 통에 모든 공간 표기)
   if (!isAdmin) {
     const firstReservation = db.prepare('SELECT * FROM reservations WHERE id = ?').get(createdReservations[0].id);
-    sendReservationNotification(firstReservation, room, building).catch(console.error);
+    const firstRoom = rooms[0];
+    const firstBuilding = db.prepare('SELECT * FROM buildings WHERE id = ?').get(firstRoom.building_id);
+    const places = getPlaceLabels(firstReservation);
+    sendReservationNotification(firstReservation, firstRoom, firstBuilding, places).catch(console.error);
   }
 
+  const placeCount = roomIdList.length;
+  const message = isAdmin
+    ? `${placeCount}개 공간 · 총 ${createdReservations.length}건이 등록되었습니다.`
+    : `${placeCount}개 공간 · 총 ${createdReservations.length}건이 신청되었습니다.`;
+
   res.status(201).json({
-    message: `${createdReservations.length}개의 예약이 ${isAdmin ? '등록' : '신청'}되었습니다.`,
+    message,
     reservations: createdReservations,
-    recurrence_group_id: recurrenceGroupId,
+    recurrence_group_id: groupId,
   });
 });
 
@@ -255,10 +273,10 @@ router.post('/:id/approve', requireAdmin, (req, res) => {
       .run('approved', req.params.id);
   }
 
-  // 신청자에게 승인 알림 이메일 발송
+  // 신청자에게 승인 알림 이메일 발송 (그룹이면 모든 공간 표기)
   const room = db.prepare('SELECT * FROM rooms WHERE id = ?').get(reservation.room_id);
   const building = db.prepare('SELECT * FROM buildings WHERE id = ?').get(room.building_id);
-  sendApprovalNotification(reservation, room, building).catch(console.error);
+  sendApprovalNotification(reservation, room, building, getPlaceLabels(reservation)).catch(console.error);
 
   res.json({ message: '승인되었습니다.' });
 });
@@ -279,10 +297,10 @@ router.post('/:id/reject', requireAdmin, (req, res) => {
       .run('rejected', reason || '', req.params.id);
   }
 
-  // 신청자에게 거절 알림 이메일 발송
+  // 신청자에게 거절 알림 이메일 발송 (그룹이면 모든 공간 표기)
   const room = db.prepare('SELECT * FROM rooms WHERE id = ?').get(reservation.room_id);
   const building = db.prepare('SELECT * FROM buildings WHERE id = ?').get(room.building_id);
-  sendRejectionNotification(reservation, room, building, reason).catch(console.error);
+  sendRejectionNotification(reservation, room, building, reason, getPlaceLabels(reservation)).catch(console.error);
 
   res.json({ message: '거절되었습니다.' });
 });
@@ -304,10 +322,10 @@ router.get('/:id/approve', (req, res) => {
       .run('approved', req.params.id);
   }
 
-  // 신청자에게 승인 알림 이메일 발송
+  // 신청자에게 승인 알림 이메일 발송 (그룹이면 모든 공간 표기)
   const room = db.prepare('SELECT * FROM rooms WHERE id = ?').get(reservation.room_id);
   const building = db.prepare('SELECT * FROM buildings WHERE id = ?').get(room.building_id);
-  sendApprovalNotification(reservation, room, building).catch(console.error);
+  sendApprovalNotification(reservation, room, building, getPlaceLabels(reservation)).catch(console.error);
 
   res.send(renderResultPage('승인 완료', `${reservation.applicant_name}님의 공간 신청이 승인되었습니다.`, 'success'));
 });
@@ -334,13 +352,36 @@ router.get('/:id/reject', (req, res) => {
       .run('rejected', reason || '', req.params.id);
   }
 
-  // 신청자에게 거절 알림 이메일 발송
+  // 신청자에게 거절 알림 이메일 발송 (그룹이면 모든 공간 표기)
   const room = db.prepare('SELECT * FROM rooms WHERE id = ?').get(reservation.room_id);
   const building = db.prepare('SELECT * FROM buildings WHERE id = ?').get(room.building_id);
-  sendRejectionNotification(reservation, room, building, reason).catch(console.error);
+  sendRejectionNotification(reservation, room, building, reason, getPlaceLabels(reservation)).catch(console.error);
 
   res.send(renderResultPage('거절 완료', `${reservation.applicant_name}님의 공간 신청이 거절되었습니다.`, 'rejected'));
 });
+
+// Helper: 한 신청(그룹 또는 단일)에 포함된 공간 라벨 목록 ("건물 층 - 공간")
+// - 그룹이면 그룹 내 모든 공간(중복 제거), 단일이면 그 공간 하나
+function getPlaceLabels(reservation) {
+  let rows;
+  if (reservation.recurrence_group_id) {
+    rows = db.prepare(`
+      SELECT DISTINCT rm.id, rm.name, rm.floor, b.name AS building_name
+      FROM reservations r
+      JOIN rooms rm ON r.room_id = rm.id
+      JOIN buildings b ON rm.building_id = b.id
+      WHERE r.recurrence_group_id = ?
+      ORDER BY b.name, rm.floor, rm.name
+    `).all(reservation.recurrence_group_id);
+  } else {
+    rows = db.prepare(`
+      SELECT rm.id, rm.name, rm.floor, b.name AS building_name
+      FROM rooms rm JOIN buildings b ON rm.building_id = b.id
+      WHERE rm.id = ?
+    `).all(reservation.room_id);
+  }
+  return rows.map((x) => `${x.building_name} ${x.floor || ''} - ${x.name}`.replace(/\s+/g, ' ').trim());
+}
 
 // Helper: 반복 날짜 생성 (기본 1년으로 확장)
 function generateDates(startDate, recurrenceType, recurrenceDays, endDate) {
