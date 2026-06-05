@@ -119,7 +119,7 @@ export default function DailyRoomView({ rooms, onEventClick, onSelectTime, isAdm
 
   // 슬롯 인덱스 → "HH:MM"
   const slotIndexToTime = (idx) => {
-    const totalMinutes = 8 * 60 + idx * 30;
+    const totalMinutes = 7 * 60 + idx * 30;
     const h = Math.floor(totalMinutes / 60);
     const m = totalMinutes % 60;
     return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
@@ -173,14 +173,14 @@ export default function DailyRoomView({ rooms, onEventClick, onSelectTime, isAdm
     });
   }, [date, refreshKey, isAdmin]);
 
-  // 시간 슬롯 (08:00 ~ 22:00, 30분 단위)
+  // 시간 슬롯 (07:00 ~ 23:00, 30분 단위)
   const slots = useMemo(() => {
     const arr = [];
-    for (let h = 8; h <= 21; h++) {
+    for (let h = 7; h <= 22; h++) {
       arr.push(`${String(h).padStart(2, '0')}:00`);
       arr.push(`${String(h).padStart(2, '0')}:30`);
     }
-    arr.push('22:00');
+    arr.push('23:00');
     return arr;
   }, []);
 
@@ -240,7 +240,7 @@ export default function DailyRoomView({ rooms, onEventClick, onSelectTime, isAdm
   // 시간 → 슬롯 인덱스 (30분 단위)
   const timeToSlotIndex = (time) => {
     const [h, m] = time.split(':').map(Number);
-    return (h - 8) * 2 + Math.floor(m / 30);
+    return (h - 7) * 2 + Math.floor(m / 30);
   };
 
   // 날짜 이동

@@ -73,7 +73,8 @@ router.post('/', (req, res) => {
   if (roomIdList.length === 0 || !applicant_name || !department || !date || !start_time || !end_time || !purpose) {
     return res.status(400).json({ error: '필수 항목을 모두 입력해주세요. (공간을 한 곳 이상 선택해야 합니다)' });
   }
-  if (!applicant_email) {
+  // 이메일은 일반 신청자만 필수 (승인/거절 알림 발송용). 관리자 직접 등록은 생략 가능.
+  if (!applicant_email && created_by !== 'admin') {
     return res.status(400).json({ error: '이메일은 필수 입력 항목입니다. (승인/거절 알림을 받기 위해 필요)' });
   }
 

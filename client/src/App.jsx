@@ -37,6 +37,9 @@ export default function App() {
   const [admin, setAdmin] = useState(null); // { email, name, picture, isAdmin }
   const [authConfig, setAuthConfig] = useState(null);
   const googleBtnRef = useRef(null);
+  // 관리자 로그인 버튼(구석)을 눌렀을 때만 실제 Google 로그인 버튼을 노출
+  const [showAdminLogin, setShowAdminLogin] = useState(false);
+  const [gsiReady, setGsiReady] = useState(false);
 
   // 모바일 감지
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' && window.innerWidth < 768);
@@ -117,20 +120,29 @@ export default function App() {
           client_id: authConfig.googleClientId,
           callback: handleGoogleResponse,
         });
-        if (googleBtnRef.current) {
-          window.google.accounts.id.renderButton(googleBtnRef.current, {
-            type: 'standard',
-            theme: 'outline',
-            size: 'medium',
-            text: 'signin_with',
-            locale: 'ko',
-          });
-        }
+        setGsiReady(true);
       }
     };
     document.head.appendChild(script);
     return () => { document.head.removeChild(script); };
   }, [authConfig]);
+
+  // "관리자 로그인"을 눌러 노출했을 때만 실제 Google 버튼을 렌더 (숨김 상태 렌더 이슈 방지)
+  useEffect(() => {
+    if (!googleBtnRef.current) return;
+    if (showAdminLogin && gsiReady && window.google) {
+      googleBtnRef.current.innerHTML = '';
+      window.google.accounts.id.renderButton(googleBtnRef.current, {
+        type: 'standard',
+        theme: 'outline',
+        size: 'medium',
+        text: 'signin_with',
+        locale: 'ko',
+      });
+    } else {
+      googleBtnRef.current.innerHTML = '';
+    }
+  }, [showAdminLogin, gsiReady]);
 
   const handleGoogleResponse = async (response) => {
     try {
@@ -301,7 +313,16 @@ export default function App() {
               <button className="btn btn-secondary btn-sm" onClick={handleLogout}>로그아웃</button>
             </div>
           ) : (
-            <div ref={googleBtnRef} className="google-login-btn"></div>
+            <div className="admin-login-wrap">
+              <button
+                className="admin-login-btn"
+                onClick={() => setShowAdminLogin((s) => !s)}
+                aria-expanded={showAdminLogin}
+              >
+                관리자 로그인
+              </button>
+              <div ref={googleBtnRef} className="google-login-btn" style={{ display: showAdminLogin ? 'flex' : 'none' }}></div>
+            </div>
           )}
         </div>
       </header>
@@ -425,8 +446,8 @@ export default function App() {
           week: '주',
           list: '목록',
         }}
-        slotMinTime="08:00:00"
-        slotMaxTime="22:00:00"
+        slotMinTime="07:00:00"
+        slotMaxTime="23:00:00"
         events={events}
         datesSet={handleDatesSet}
         eventClick={handleEventClick}

@@ -290,7 +290,15 @@
 - **이메일**(`server/services/email.js`): 3개 알림 함수에 `places` 배열 인자 추가 → 여러 공간이면 "N개 공간" 목록 + 제목 "○○ 외 N곳".
 - **프론트**(`ReservationForm.jsx`): 공간 `<select>` → 체크박스 목록 + "선택한 공간" 칩(× 제거). 건물/층은 목록 필터일 뿐 선택은 유지(건물·층 넘나들며 다중 선택 가능). 수정 모드는 단일(radio)로 동작. `styles.css`에 `.room-checkbox-list`/`.room-chip` 등 추가. 상세/수정 모달의 "반복" 문구를 묶음 성격(반복 vs 여러 공간)에 맞게 일반화.
 - **검증**: 로컬에서 3공간→3행 그룹, 2공간×5주→10행 그룹, 단일→그룹없음, UI 제출 4공간(건물·층 혼합)→4행 1그룹 모두 정상. 프로덕션 빌드 OK.
-- ⚠️ **미배포**: 코드 변경은 로컬에만 있음. 배포하려면 git push → 서버 `git pull && cd client && npm run build && pm2 restart booking-api`(백엔드도 바뀌었으므로 재시작 필수). **서버 DB 스키마 변경 없음**(마이그레이션 불필요).
+- ✅ **배포 완료** (2026-06-05): commit `666a30d` → push → 서버 `git pull` + `client npm run build`(새 번들 `index-D2uOor5f.js`) + `pm2 restart booking-api`. 라이브 검증 통과(체크박스 UI·칩·새 검증 메시지). DB 스키마 변경 없음.
+  - 💡 후속(선택): Nginx가 `index.html`에 `Cache-Control` 미설정(ETag만) → 재방문자는 ETag 재검증으로 새 버전 받지만, 확실히 하려면 `index.html`에 `Cache-Control: no-cache`, 해시 asset엔 장기 캐시 설정 권장.
+
+### 2026-06-05 — 운영 편의 개선 4건 (시간범위·관리자 이메일·로그인 버튼·관리자 이름)
+- **① 사용 시간 범위 07:00~23:00**: 폼 시 옵션 08~22 → **07~23**(`ReservationForm.jsx`), 주뷰 `slotMinTime/MaxTime` 07~23(`App.jsx`), 일뷰 슬롯·시간변환 7시 기준(`DailyRoomView.jsx` slotIndexToTime `8*60→7*60`, timeToSlotIndex `(h-8)→(h-7)`, slots 07:00~23:00).
+- **② 관리자 등록 시 이메일 불필요**: 백엔드 POST 이메일 검증을 `created_by !== 'admin'`일 때만(`reservations.js`), 폼은 관리자면 이메일 `*`·required 제거·안내문 변경(`ReservationForm.jsx`).
+- **③ 로그인 버튼 → 우측 구석 "관리자 로그인"**: 헤더 가운데 GSI 버튼을 우상단 구석의 수수한 "관리자 로그인" 버튼으로. 누르면 그때 실제 Google 버튼 렌더(`showAdminLogin`/`gsiReady` 상태, `renderButton`을 노출 시점에 호출 — 숨김렌더 이슈 회피). `App.jsx` + `styles.css`(.auth-area 절대배치 우상단, .admin-login-btn, 모바일 제목 좌우 64px 여백). ※ Google 보안상 버튼 글자 임의변경 불가 → "관리자 로그인(우리 버튼)→누르면 Google 버튼 노출" 2단 방식.
+- **④ 관리자 신규 등록 시 신청자 이름 기본값 "관리자"**: `applicant_name` 초기값 `source?.applicant_name || (isAdmin && !isEdit ? '관리자' : '')` (수정/복제는 원본 유지, 편집 가능).
+- 검증: 폼 시옵션 07·23 확인, 일뷰 07:00 시작, 백엔드 관리자=이메일없이 성공·일반=400, 헤더 "관리자 로그인" 구석 배치·클릭 시 Google 버튼 렌더 확인. 프로덕션 빌드 OK. DB 스키마 변경 없음.
 
 ### 2026-06-04 (Day 4 저녁) — 교회 명의 계정 이전 시도 (보류)
 - **이유**: 현재 서버가 joseph 개인 Oracle 계정(josephwang07)에 종속. 교회 자산화하려면 교회 이메일로 새 계정 필요. (휴대폰·카드는 가입 후 변경 가능, **이메일만 영구 고정**이라 처음부터 교회 것이어야 함)

@@ -25,7 +25,8 @@ export default function ReservationForm({ buildings, rooms, onClose, onSuccess, 
   const isMultiRoom = !isEdit;
 
   const [form, setForm] = useState({
-    applicant_name: source?.applicant_name || '',
+    // 관리자가 새로 등록할 때는 신청자 이름을 "관리자"로 기본 입력 (수정/복제는 원본 유지)
+    applicant_name: source?.applicant_name || (isAdmin && !isEdit ? '관리자' : ''),
     department: source?.department || '',
     building_id: source?.building_id || '',
     floor: initialFloor,
@@ -153,8 +154,8 @@ export default function ReservationForm({ buildings, rooms, onClose, onSuccess, 
     }
   };
 
-  // 시 옵션: 08 ~ 22
-  const hourOptions = Array.from({ length: 15 }, (_, i) => String(i + 8).padStart(2, '0'));
+  // 시 옵션: 07 ~ 23 (오전 7시 ~ 오후 11시)
+  const hourOptions = Array.from({ length: 17 }, (_, i) => String(i + 7).padStart(2, '0'));
   // 분 옵션: 00, 05, 10, ..., 55 (5분 단위)
   const minuteOptions = Array.from({ length: 12 }, (_, i) => String(i * 5).padStart(2, '0'));
 
@@ -356,9 +357,11 @@ export default function ReservationForm({ buildings, rooms, onClose, onSuccess, 
 
             <div className="form-row">
               <div className="form-group">
-                <label>이메일 <span className="required">*</span></label>
-                <input type="email" name="applicant_email" value={form.applicant_email} onChange={handleChange} placeholder="example@email.com" required />
-                <small style={{ color: '#718096', fontSize: '0.75rem' }}>승인/거절 알림이 이 이메일로 발송됩니다</small>
+                <label>이메일 {!isAdmin && <span className="required">*</span>}</label>
+                <input type="email" name="applicant_email" value={form.applicant_email} onChange={handleChange} placeholder="example@email.com" required={!isAdmin} />
+                <small style={{ color: '#718096', fontSize: '0.75rem' }}>
+                  {isAdmin ? '관리자 등록은 이메일 없이도 됩니다 (입력 시 승인/거절 알림 발송)' : '승인/거절 알림이 이 이메일로 발송됩니다'}
+                </small>
               </div>
               <div className="form-group">
                 <label>전화번호</label>
