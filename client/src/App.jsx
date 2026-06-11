@@ -225,20 +225,15 @@ export default function App() {
 
   const handleEventClick = (info) => {
     const view = info.view.type;
-    // 목록 뷰에서 일정 클릭: PC → 주 뷰, 모바일 → 일 뷰
+    // 목록 뷰에서 일정 클릭: PC/모바일 모두 일 뷰로 (날짜 헤더 클릭과 동일)
     if (view.startsWith('list')) {
       const startDate = info.event.start;
       if (startDate) {
-        if (isMobile) {
-          const y = startDate.getFullYear();
-          const m = String(startDate.getMonth() + 1).padStart(2, '0');
-          const d = String(startDate.getDate()).padStart(2, '0');
-          setDailyInitialDate(`${y}-${m}-${d}`);
-          setCurrentView('daily');
-        } else if (calendarRef.current) {
-          calendarRef.current.getApi().changeView('timeGridWeek', startDate);
-          setCurrentView('week');
-        }
+        const y = startDate.getFullYear();
+        const m = String(startDate.getMonth() + 1).padStart(2, '0');
+        const d = String(startDate.getDate()).padStart(2, '0');
+        setDailyInitialDate(`${y}-${m}-${d}`);
+        setCurrentView('daily');
         return;
       }
     }
