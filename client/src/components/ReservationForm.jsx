@@ -365,7 +365,7 @@ export default function ReservationForm({ buildings, rooms, onClose, onSuccess, 
               </div>
               <div className="form-group">
                 <label>전화번호</label>
-                <input type="tel" name="contact" value={form.contact} onChange={handleChange} placeholder="010-0000-0000 (선택)" />
+                <input type="tel" name="contact" value={form.contact} onChange={handleChange} placeholder="(xxx)-xxx-xxxx (선택)" />
               </div>
             </div>
 
@@ -404,7 +404,15 @@ export default function ReservationForm({ buildings, rooms, onClose, onSuccess, 
                 {form.recurrence_type !== 'none' && (
                   <div style={{ marginTop: '10px' }}>
                     <label style={{ fontSize: '0.8rem', color: '#4a5568' }}>반복 종료일 (미입력 시 {form.recurrence_type === 'daily' ? '1개월' : '1년'})</label>
-                    <input type="date" name="recurrence_end_date" value={form.recurrence_end_date} onChange={handleChange} style={{ marginTop: '4px' }} />
+                    <input
+                      type="date"
+                      name="recurrence_end_date"
+                      value={form.recurrence_end_date}
+                      onChange={handleChange}
+                      min={form.date}
+                      max="2099-12-31"
+                      style={{ marginTop: '4px' }}
+                    />
                   </div>
                 )}
               </div>

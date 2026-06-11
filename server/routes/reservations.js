@@ -384,36 +384,32 @@ function getPlaceLabels(reservation) {
   return rows.map((x) => `${x.building_name} ${x.floor || ''} - ${x.name}`.replace(/\s+/g, ' ').trim());
 }
 
-// Helper: 반복 날짜 생성 (기본 1년으로 확장)
+// Helper: 반복 날짜 생성 (종료일 미입력 시 기본 범위로 확장)
+// 어떤 경우에도 MAX_OCCURRENCES 건을 넘지 않도록 안전장치
 function generateDates(startDate, recurrenceType, recurrenceDays, endDate) {
   if (!recurrenceType || recurrenceType === 'none') {
     return [startDate];
   }
 
+  const MAX_OCCURRENCES = 800; // 폭주 방지 안전장치
   const dates = [];
   const start = new Date(startDate);
   // 종료일 미지정 시 기본 범위: 매일은 31일, 매주/매월은 1년(365일)
   const defaultSpanDays = recurrenceType === 'daily' ? 31 : 365;
   const end = endDate ? new Date(endDate) : new Date(start.getTime() + defaultSpanDays * 24 * 60 * 60 * 1000);
 
-  if (recurrenceType === 'daily') {
-    let current = new Date(start);
-    while (current <= end) {
-      dates.push(current.toISOString().split('T')[0]);
-      current.setDate(current.getDate() + 1);
-    }
-  } else if (recurrenceType === 'weekly') {
-    let current = new Date(start);
-    while (current <= end) {
-      dates.push(current.toISOString().split('T')[0]);
-      current.setDate(current.getDate() + 7);
-    }
-  } else if (recurrenceType === 'monthly') {
-    let current = new Date(start);
-    while (current <= end) {
-      dates.push(current.toISOString().split('T')[0]);
-      current.setMonth(current.getMonth() + 1);
-    }
+  const stepFns = {
+    daily: (d) => d.setDate(d.getDate() + 1),
+    weekly: (d) => d.setDate(d.getDate() + 7),
+    monthly: (d) => d.setMonth(d.getMonth() + 1),
+  };
+  const step = stepFns[recurrenceType];
+  if (!step) return dates;
+
+  let current = new Date(start);
+  while (current <= end && dates.length < MAX_OCCURRENCES) {
+    dates.push(current.toISOString().split('T')[0]);
+    step(current);
   }
 
   return dates;

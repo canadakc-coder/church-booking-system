@@ -8,13 +8,7 @@ import { fetchBuildings, fetchRooms, fetchReservations, fetchAuthConfig, verifyG
 import ReservationForm from './components/ReservationForm';
 import ReservationDetail from './components/ReservationDetail';
 import DailyRoomView from './components/DailyRoomView';
-
-// 건물별 색상 매핑
-const BUILDING_COLORS = {
-  wesley: { bg: '#3182ce', border: '#2c5282', label: '웨슬리홀' },   // 파란 계열
-  vision: { bg: '#dd6b20', border: '#c05621', label: '비전홀' },     // 주황 계열
-  daniel: { bg: '#38a169', border: '#2f855a', label: '다니엘홀' },   // 녹색 계열
-};
+import { getSpaceColor, SPACE_LEGEND } from './colors';
 
 const PENDING_OPACITY = '0.6';
 
@@ -188,7 +182,7 @@ export default function App() {
     }
 
     const calendarEvents = filtered.map((r) => {
-      const buildingColor = BUILDING_COLORS[r.building_id] || { bg: '#718096', border: '#4a5568' };
+      const spaceColor = getSpaceColor(r.building_id, r.floor);
       const isPending = r.status === 'pending';
       const isRejected = r.status === 'rejected';
 
@@ -205,8 +199,8 @@ export default function App() {
         title,
         start: `${r.date}T${r.start_time}`,
         end: `${r.date}T${r.end_time}`,
-        backgroundColor: isRejected ? '#e53e3e' : buildingColor.bg,
-        borderColor: isRejected ? '#c53030' : (isPending ? '#fbd38d' : buildingColor.border),
+        backgroundColor: isRejected ? '#e53e3e' : spaceColor.bg,
+        borderColor: isRejected ? '#c53030' : (isPending ? '#fbd38d' : spaceColor.border),
         textColor: 'white',
         classNames: [
           `building-${r.building_id}`,
@@ -304,7 +298,7 @@ export default function App() {
     <div className="app-container">
       <header className="app-header">
         <h1>카나다광림교회 공간 신청</h1>
-        <p>Canada Kwanglim Church Room Reservation</p>
+        <p>Kwanglim Methodist Church in Canada Room Reservation</p>
         <div className="auth-area">
           {admin ? (
             <div className="admin-bar">
@@ -578,9 +572,11 @@ export default function App() {
 
       {viewMode === 'calendar' && (
       <div className="legend">
-        <span className="legend-item"><span className="legend-dot" style={{ background: BUILDING_COLORS.wesley.bg }}></span>웨슬리홀</span>
-        <span className="legend-item"><span className="legend-dot" style={{ background: BUILDING_COLORS.vision.bg }}></span>비전홀</span>
-        <span className="legend-item"><span className="legend-dot" style={{ background: BUILDING_COLORS.daniel.bg }}></span>다니엘홀</span>
+        {SPACE_LEGEND.map((c) => (
+          <span key={c.label} className="legend-item">
+            <span className="legend-dot" style={{ background: c.bg }}></span>{c.label}
+          </span>
+        ))}
         <span className="legend-divider">|</span>
         <span className="legend-item"><span className="legend-dot" style={{ background: '#fbd38d', border: '2px solid #ed8936' }}></span>대기중</span>
         {admin?.isAdmin && (

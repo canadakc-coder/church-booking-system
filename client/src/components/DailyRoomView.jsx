@@ -1,11 +1,6 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { fetchReservations } from '../api';
-
-const BUILDING_COLORS = {
-  wesley: { bg: '#3182ce', border: '#2c5282' },
-  vision: { bg: '#dd6b20', border: '#c05621' },
-  daniel: { bg: '#38a169', border: '#2f855a' },
-};
+import { getSpaceColor, SPACE_LEGEND } from '../colors';
 
 const BUILDING_ORDER = { wesley: 1, vision: 2, daniel: 3 };
 
@@ -304,7 +299,7 @@ export default function DailyRoomView({ rooms, onEventClick, onSelectTime, isAdm
 
           {/* 공간별 컬럼 */}
           {orderedRooms.map((room) => {
-            const color = BUILDING_COLORS[room.building_id] || { bg: '#718096', border: '#4a5568' };
+            const color = getSpaceColor(room.building_id, room.floor);
             const roomReservations = reservationsByRoom[room.id] || [];
             return (
               <div
@@ -400,15 +395,12 @@ export default function DailyRoomView({ rooms, onEventClick, onSelectTime, isAdm
 
       {/* 범례 */}
       <div className="legend" style={{ marginTop: '12px' }}>
-        {Object.entries(BUILDING_COLORS).map(([id, c]) => {
-          const labels = { wesley: '웨슬리홀', vision: '비전홀', daniel: '다니엘홀' };
-          return (
-            <span key={id} className="legend-item">
-              <span className="legend-dot" style={{ background: c.bg }}></span>
-              {labels[id]}
-            </span>
-          );
-        })}
+        {SPACE_LEGEND.map((c) => (
+          <span key={c.label} className="legend-item">
+            <span className="legend-dot" style={{ background: c.bg }}></span>
+            {c.label}
+          </span>
+        ))}
         <span className="legend-divider">|</span>
         <span className="legend-item">
           <span className="legend-dot" style={{ background: '#fbd38d', border: '2px dashed #ed8936' }}></span>
