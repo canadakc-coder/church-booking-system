@@ -65,7 +65,7 @@ export default function App() {
   useEffect(() => {
     if (currentView !== 'daily' && calendarRef.current) {
       const viewMap = {
-        list: 'listWeek',
+        list: 'listToday',
         month: 'dayGridMonth',
         week: 'timeGridWeek',
       };
@@ -421,7 +421,7 @@ export default function App() {
         initialView={
           currentView === 'month' ? 'dayGridMonth'
           : currentView === 'week' ? 'timeGridWeek'
-          : 'listWeek'
+          : 'listToday'
         }
         locale="ko"
         headerToolbar={{
@@ -514,6 +514,12 @@ export default function App() {
           dayGridMonth: {
             // 월 뷰 비율: 세로로 더 길게
             aspectRatio: isMobile ? 0.7 : 1.2,
+          },
+          // 목록: 주일 기준 한 주가 아니라 '오늘부터 7일'을 보여줌
+          listToday: {
+            type: 'list',
+            duration: { days: 7 },
+            dateAlignment: 'day',
           },
         }}
         eventDisplay="block"
